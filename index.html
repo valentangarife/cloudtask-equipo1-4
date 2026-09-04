@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudTasks</title>
+
+  <!-- Bootstrap CSS (CDN) -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
+  <!-- Bootstrap Icons (CDN) -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+  >
+
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ===== Encabezado ===== -->
+  <header class="app-header">
+    <div class="container">
+      <div class="d-flex align-items-center justify-content-between py-3">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-check2-square fs-3 text-primary"></i>
+          <h1 class="h4 mb-0 fw-bold">CloudTasks</h1>
+        </div>
+        <span class="badge text-bg-light border" id="task-count">0 tareas</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container py-4">
+    <div class="row g-4">
+
+      <!-- ===== Formulario para crear tarea ===== -->
+      <div class="col-12 col-lg-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h2 class="h6 text-uppercase text-muted mb-3">Nueva tarea</h2>
+
+            <form id="task-form" novalidate>
+              <div class="mb-3">
+                <label for="title" class="form-label">Título <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="title"
+                  name="title"
+                  placeholder="Ej. Preparar informe técnico"
+                  maxlength="80"
+                  required
+                >
+                <div class="invalid-feedback">El título es obligatorio (máx. 80 caracteres).</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="description" class="form-label">Descripción</label>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  name="description"
+                  rows="3"
+                  maxlength="300"
+                  placeholder="Detalles de la tarea (opcional)"
+                ></textarea>
+              </div>
+
+              <div class="mb-3">
+                <label for="deadline" class="form-label">Fecha límite</label>
+                <input type="date" class="form-control" id="deadline" name="deadline">
+                <div class="invalid-feedback">La fecha límite no puede ser anterior a hoy.</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="priority" class="form-label">Prioridad</label>
+                <select class="form-select" id="priority" name="priority">
+                  <option value="low">Baja</option>
+                  <option value="medium" selected>Media</option>
+                  <option value="high">Alta</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-plus-lg"></i> Agregar tarea
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Lista de tareas ===== -->
+      <div class="col-12 col-lg-8">
+
+        <!-- Filtros -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div class="btn-group" role="group" aria-label="Filtro de tareas">
+            <input type="radio" class="btn-check" name="filter" id="filter-all" value="all" checked>
+            <label class="btn btn-outline-secondary btn-sm" for="filter-all">Todas</label>
+
+            <input type="radio" class="btn-check" name="filter" id="filter-pending" value="pending">
+            <label class="btn btn-outline-secondary btn-sm" for="filter-pending">Pendientes</label>
+
+            <input type="radio" class="btn-check" name="filter" id="filter-completed" value="completed">
+            <label class="btn btn-outline-secondary btn-sm" for="filter-completed">Completadas</label>
+          </div>
+
+          <select id="sort-select" class="form-select form-select-sm w-auto">
+            <option value="created_desc">Más recientes primero</option>
+            <option value="deadline_asc">Fecha límite próxima</option>
+            <option value="priority_desc">Prioridad (alta primero)</option>
+          </select>
+        </div>
+
+        <!-- Estado vacío -->
+        <div id="empty-state" class="text-center text-muted py-5 d-none">
+          <i class="bi bi-clipboard-check fs-1"></i>
+          <p class="mt-2 mb-0">No hay tareas para mostrar.</p>
+          <p class="small">Crea tu primera tarea usando el formulario de la izquierda.</p>
+        </div>
+
+        <!-- Lista -->
+        <ul id="task-list" class="list-unstyled d-flex flex-column gap-2"></ul>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Plantilla de una tarea (se clona por JS) -->
+  <template id="task-template">
+    <li class="card task-card shadow-sm" data-id="">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+          <input type="checkbox" class="form-check-input mt-1 task-checkbox" title="Marcar como completada">
+
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <h3 class="h6 mb-0 task-title"></h3>
+              <span class="badge priority-badge"></span>
+              <span class="badge text-bg-secondary status-badge"></span>
+            </div>
+            <p class="text-muted small mb-1 task-description"></p>
+            <div class="d-flex gap-3 small text-muted task-meta">
+              <span class="task-created"><i class="bi bi-calendar-plus"></i> <span></span></span>
+              <span class="task-deadline"><i class="bi bi-flag"></i> <span></span></span>
+            </div>
+          </div>
+
+          <button class="btn btn-sm btn-outline-danger task-delete" title="Eliminar tarea">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    </li>
+  </template>
+
+  <!-- Bootstrap JS bundle (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Lógica de la aplicación -->
+  <script src="js/app.js"></script>
+</body>
+</html>

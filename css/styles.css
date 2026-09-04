@@ -1,0 +1,64 @@
+:root {
+  --ct-bg: #f7f8fa;
+  --ct-border: #e5e7eb;
+}
+
+body {
+  background-color: var(--ct-bg);
+}
+
+.app-header {
+  background-color: #fff;
+  border-bottom: 1px solid var(--ct-border);
+}
+
+/* ===== Tarjeta de tarea ===== */
+.task-card {
+  border: 1px solid var(--ct-border);
+  transition: box-shadow 0.15s ease;
+}
+
+.task-card:hover {
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.06);
+}
+
+.task-card.completed .task-title {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+.task-card.completed .task-description {
+  text-decoration: line-through;
+}
+
+.task-checkbox {
+  width: 1.15rem;
+  height: 1.15rem;
+  cursor: pointer;
+}
+
+.task-meta i {
+  margin-right: 2px;
+}
+
+/* ===== Badges de prioridad ===== */
+.priority-badge.priority-low {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.priority-badge.priority-medium {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.priority-badge.priority-high {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* ===== Fecha límite vencida ===== */
+.task-deadline.overdue {
+  color: #dc2626;
+  font-weight: 600;
+}
