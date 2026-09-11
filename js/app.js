@@ -1,35 +1,22 @@
 /**
- * CloudTasks - Etapa 1
+ * CloudTasks - Etapa 2
  * Lógica de la aplicación en JavaScript puro.
  *
- * Persistencia: por ahora se usa localStorage como almacenamiento temporal.
- * En la Etapa 2 este módulo de almacenamiento se reemplazará por llamadas
- * a Supabase, manteniendo el resto de la aplicación (UI) sin cambios.
+ * Persistencia: las tareas se guardan en Supabase (PostgreSQL) a través
+ * de supabaseClient (ver js/config.js). Cada tarea pertenece al usuario
+ * autenticado (columna user_id + Row Level Security).
  */
 
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "cloudtasks.tasks";
-
-  // ---------------------------------------------------------------
-  // Capa de datos (storage). Aislada para poder sustituirla por
-  // Supabase en la Etapa 2 sin tocar el resto de la app.
-  // ---------------------------------------------------------------
-  const storage = {
-    getAll() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    },
-    saveAll(tasks) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    },
-  };
+  const TASKS_TABLE = "tasks";
 
   // ---------------------------------------------------------------
   // Estado en memoria
   // ---------------------------------------------------------------
-  let tasks = storage.getAll();
+  let tasks = [];
+  let currentUser = null;
   let currentFilter = "all";
   let currentSort = "created_desc";
 
@@ -41,6 +28,7 @@
   const descriptionInput = document.getElementById("description");
   const deadlineInput = document.getElementById("deadline");
   const priorityInput = document.getElementById("priority");
+  const formSubmitBtn = form.querySelector('button[type="submit"]');
 
   const taskList = document.getElementById("task-list");
   const taskTemplate = document.getElementById("task-template");
@@ -48,15 +36,14 @@
   const taskCountBadge = document.getElementById("task-count");
   const sortSelect = document.getElementById("sort-select");
   const filterRadios = document.querySelectorAll('input[name="filter"]');
+  const statusAlert = document.getElementById("status-alert");
+
+  const userNameEl = document.getElementById("user-name");
+  const logoutBtn = document.getElementById("logout-btn");
 
   // ---------------------------------------------------------------
   // Utilidades
   // ---------------------------------------------------------------
-  function generateId() {
-    return (crypto.randomUUID && crypto.randomUUID()) ||
-      `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  }
-
   function todayISODate() {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -72,13 +59,48 @@
   const priorityLabels = { low: "Baja", medium: "Media", high: "Alta" };
   const priorityWeight = { low: 1, medium: 2, high: 3 };
 
+  function showStatus(message, type = "danger") {
+    statusAlert.textContent = message;
+    statusAlert.className = `alert alert-${type}`;
+    window.clearTimeout(showStatus._t);
+    showStatus._t = window.setTimeout(() => {
+      statusAlert.className = "alert d-none";
+    }, 4000);
+  }
+
+  // ---------------------------------------------------------------
+  // Sesión: proteger la página y mostrar datos del usuario
+  // ---------------------------------------------------------------
+  async function requireSession() {
+    const { data } = await supabaseClient.auth.getSession();
+    if (!data.session) {
+      window.location.replace("login.html");
+      return null;
+    }
+    return data.session.user;
+  }
+
+  function renderUser(user) {
+    const meta = user.user_metadata || {};
+    const nombre = meta.nombre || "";
+    const apellido = meta.apellido || "";
+    const display = (nombre || apellido)
+      ? `${nombre} ${apellido}`.trim()
+      : user.email;
+    userNameEl.textContent = display;
+  }
+
+  logoutBtn.addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  });
+
   // ---------------------------------------------------------------
   // Validación de datos del formulario
   // ---------------------------------------------------------------
   function validateForm() {
     let valid = true;
 
-    // Título obligatorio
     const title = titleInput.value.trim();
     if (!title) {
       titleInput.classList.add("is-invalid");
@@ -87,7 +109,6 @@
       titleInput.classList.remove("is-invalid");
     }
 
-    // Fecha límite no puede ser anterior a hoy (si se especifica)
     const deadline = deadlineInput.value;
     if (deadline && deadline < todayISODate()) {
       deadlineInput.classList.add("is-invalid");
@@ -100,37 +121,82 @@
   }
 
   // ---------------------------------------------------------------
-  // Operaciones CRUD
+  // Operaciones CRUD contra Supabase
   // ---------------------------------------------------------------
-  function createTask({ title, description, deadline, priority }) {
-    const newTask = {
-      id: generateId(),
+  async function loadTasks() {
+    const { data, error } = await supabaseClient
+      .from(TASKS_TABLE)
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      showStatus(`No se pudieron cargar las tareas: ${error.message}`);
+      return;
+    }
+
+    tasks = data;
+    render();
+  }
+
+  async function createTask({ title, description, deadline, priority }) {
+    setFormLoading(true);
+
+    const { error } = await supabaseClient.from(TASKS_TABLE).insert({
+      user_id: currentUser.id,
       title: title.trim(),
       description: description.trim(),
-      completed: false,
-      created_at: new Date().toISOString(),
       deadline: deadline || null,
       priority: priority || "medium",
-    };
-    tasks.push(newTask);
-    persistAndRender();
+    });
+
+    setFormLoading(false);
+
+    if (error) {
+      showStatus(`No se pudo crear la tarea: ${error.message}`);
+      return;
+    }
+
+    await loadTasks();
   }
 
-  function toggleTaskCompleted(id) {
-    tasks = tasks.map((t) =>
-      t.id === id ? { ...t, completed: !t.completed } : t
-    );
-    persistAndRender();
-  }
-
-  function deleteTask(id) {
-    tasks = tasks.filter((t) => t.id !== id);
-    persistAndRender();
-  }
-
-  function persistAndRender() {
-    storage.saveAll(tasks);
+  async function toggleTaskCompleted(id, completed) {
+    // Actualización optimista para que la UI responda al instante.
+    tasks = tasks.map((t) => (t.id === id ? { ...t, completed } : t));
     render();
+
+    const { error } = await supabaseClient
+      .from(TASKS_TABLE)
+      .update({ completed })
+      .eq("id", id);
+
+    if (error) {
+      showStatus(`No se pudo actualizar la tarea: ${error.message}`);
+      await loadTasks(); // revertir con el estado real
+    }
+  }
+
+  async function deleteTask(id) {
+    const previous = tasks;
+    tasks = tasks.filter((t) => t.id !== id);
+    render();
+
+    const { error } = await supabaseClient
+      .from(TASKS_TABLE)
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      showStatus(`No se pudo eliminar la tarea: ${error.message}`);
+      tasks = previous;
+      render();
+    }
+  }
+
+  function setFormLoading(loading) {
+    formSubmitBtn.disabled = loading;
+    formSubmitBtn.innerHTML = loading
+      ? '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...'
+      : '<i class="bi bi-plus-lg"></i> Agregar tarea';
   }
 
   // ---------------------------------------------------------------
@@ -192,7 +258,9 @@
 
     const checkbox = node.querySelector(".task-checkbox");
     checkbox.checked = task.completed;
-    checkbox.addEventListener("change", () => toggleTaskCompleted(task.id));
+    checkbox.addEventListener("change", () =>
+      toggleTaskCompleted(task.id, checkbox.checked)
+    );
 
     node.querySelector(".task-title").textContent = task.title;
 
@@ -209,8 +277,8 @@
 
     const statusBadge = node.querySelector(".status-badge");
     statusBadge.textContent = task.completed ? "Completada" : "Pendiente";
-    statusBadge.classList.toggle("text-bg-secondary", !task.completed);
-    statusBadge.classList.toggle("text-bg-success", task.completed);
+    statusBadge.classList.toggle("status-badge-pending", !task.completed);
+    statusBadge.classList.toggle("status-badge-done", task.completed);
 
     node.querySelector(".task-created span").textContent = formatDate(
       task.created_at.slice(0, 10)
@@ -264,7 +332,20 @@
   });
 
   // ---------------------------------------------------------------
-  // Inicio
+  // Inicio: exige sesión antes de cargar cualquier tarea
   // ---------------------------------------------------------------
-  render();
+  (async function init() {
+    currentUser = await requireSession();
+    if (!currentUser) return; // ya redirigido a login.html
+
+    renderUser(currentUser);
+    await loadTasks();
+
+    // Si la sesión se cierra en otra pestaña, saca al usuario de aquí también.
+    supabaseClient.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        window.location.replace("login.html");
+      }
+    });
+  })();
 })();
