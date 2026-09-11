@@ -1,48 +1,80 @@
 /* =========================================================
    CloudTasks — Sistema de diseño
-   Paleta: verde-azulado profundo + fondo neutro frío
+   Paleta: neutra (gris-pizarra), pensada para cualquier persona
    Tipografía: Space Grotesk (títulos) + Inter (texto)
    ========================================================= */
 
 :root {
-  --ct-bg: #f2f4f7;
+  --ct-bg: #f3f4f6;
   --ct-surface: #ffffff;
-  --ct-border: #e2e5eb;
+  --ct-border: #e5e7eb;
 
-  --ct-ink: #16233a;
-  --ct-ink-soft: #52617a;
-  --ct-muted: #8792a3;
+  --ct-ink: #1f2328;
+  --ct-ink-soft: #5b6472;
+  --ct-muted: #8b93a1;
 
-  --ct-brand: #1f5d5a;
-  --ct-brand-dark: #163f3d;
-  --ct-brand-light: #2f7a76;
-  --ct-brand-tint: #e6f0ef;
+  --ct-brand: #52606d;
+  --ct-brand-dark: #3a4652;
+  --ct-brand-light: #74838f;
+  --ct-brand-tint: #eef1f3;
 
-  --ct-radius: 0.6rem;
-  --ct-shadow: 0 1px 2px rgba(22, 35, 58, 0.06);
-  --ct-shadow-hover: 0 8px 20px rgba(22, 35, 58, 0.08);
+  /* Prioridades: una escala tierra, armónica, no arcoíris */
+  --ct-low-text: #45624f;
+  --ct-low-bg: #e3ece5;
+  --ct-low-dot: #6f9c7c;
+
+  --ct-medium-text: #83651f;
+  --ct-medium-bg: #f3e8d0;
+  --ct-medium-dot: #c99a4c;
+
+  --ct-high-text: #8a4636;
+  --ct-high-bg: #f2ddd4;
+  --ct-high-dot: #b8624c;
+
+  --ct-radius-lg: 1rem;
+  --ct-radius: 0.75rem;
+  --ct-radius-sm: 0.5rem;
+  --ct-shadow: 0 1px 2px rgba(31, 35, 40, 0.05);
+  --ct-shadow-hover: 0 10px 24px rgba(31, 35, 40, 0.08);
 }
 
 body {
   background-color: var(--ct-bg);
   color: var(--ct-ink);
   font-family: "Inter", system-ui, sans-serif;
+  margin: 0;
 }
 
-h1, h2, h3, h4, .app-title, .form-heading, .auth-brand-title, .auth-heading {
+h1, h2, h3, h4,
+.app-title, .form-heading, .auth-brand-title, .auth-heading {
   font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
 }
 
-/* ===== Encabezado de la app ===== */
-.app-header {
-  background-color: var(--ct-surface);
-  border-bottom: 1px solid var(--ct-border);
+/* =========================================================
+   Layout general: sidebar + contenido
+   ========================================================= */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  align-items: stretch;
 }
 
-.app-title {
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--ct-ink);
+.app-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-topbar {
+  background-color: var(--ct-surface);
+  border-bottom: 1px solid var(--ct-border);
+  padding: 0.9rem 1.25rem;
+}
+
+.app-content {
+  padding: 1.75rem;
+  max-width: 1180px;
+  margin: 0 auto;
 }
 
 .app-brand-mark {
@@ -51,58 +83,117 @@ h1, h2, h3, h4, .app-title, .form-heading, .auth-brand-title, .auth-heading {
   justify-content: center;
   width: 2.1rem;
   height: 2.1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--ct-radius-sm);
   background: var(--ct-brand);
   color: #fff;
   font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.app-title {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ct-ink);
+}
+
+/* =========================================================
+   Sidebar
+   ========================================================= */
+
+.app-sidebar {
+  flex: 0 0 260px;
+  background-color: var(--ct-surface);
+  border-right: 1px solid var(--ct-border);
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.1rem;
+  gap: 1.25rem;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background-color: var(--ct-brand-tint);
+  border-radius: var(--ct-radius);
+  color: var(--ct-brand-dark);
+  font-size: 0.88rem;
+}
+
+.sidebar-user i {
+  font-size: 1.2rem;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--ct-radius);
+  color: var(--ct-ink-soft);
+  font-weight: 500;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.sidebar-nav-item.active {
+  background-color: var(--ct-brand-tint);
+  color: var(--ct-brand-dark);
 }
 
 .task-count-badge {
-  background-color: var(--ct-brand-tint);
+  background-color: var(--ct-surface);
   color: var(--ct-brand-dark);
-  font-weight: 500;
-  border: 1px solid transparent;
-}
-
-/* ===== Formulario ===== */
-.task-form-card {
-  border: 1px solid var(--ct-border);
-  border-radius: var(--ct-radius);
-}
-
-.form-heading {
-  font-size: 0.95rem;
   font-weight: 600;
-  text-transform: none;
-  color: var(--ct-ink);
-  padding-bottom: 0.6rem;
-  border-bottom: 1px solid var(--ct-border);
+  border: 1px solid var(--ct-border);
+  border-radius: 999px;
 }
 
-.form-control:focus,
-.form-select:focus {
-  border-color: var(--ct-brand-light);
-  box-shadow: 0 0 0 0.2rem rgba(31, 93, 90, 0.15);
+.sidebar-nav-item.active .task-count-badge {
+  background-color: var(--ct-surface);
 }
 
-.btn-auth-primary {
-  background-color: var(--ct-brand);
-  border-color: var(--ct-brand);
-  color: #fff;
+.sidebar-logout {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--ct-border);
+  background: var(--ct-surface);
+  color: var(--ct-ink-soft);
   font-weight: 500;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--ct-radius);
+  cursor: pointer;
 }
 
-.btn-auth-primary:hover,
-.btn-auth-primary:focus {
-  background-color: var(--ct-brand-dark);
-  border-color: var(--ct-brand-dark);
-  color: #fff;
+.sidebar-logout:hover {
+  background-color: var(--ct-bg);
+  color: var(--ct-ink);
 }
+
 
 /* ===== Tarjeta de tarea ===== */
 .task-card {
   border: 1px solid var(--ct-border);
-  border-radius: var(--ct-radius);
+  border-radius: var(--ct-radius-lg);
   box-shadow: var(--ct-shadow);
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
@@ -132,32 +223,55 @@ h1, h2, h3, h4, .app-title, .form-heading, .auth-brand-title, .auth-heading {
   margin-right: 2px;
 }
 
-/* ===== Badges de prioridad ===== */
-.priority-badge {
-  font-weight: 500;
+/* ===== Prioridad: puntico + etiqueta, tonos tierra armónicos ===== */
+.priority-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
 }
 
-.priority-badge.priority-low {
-  background-color: #dff3ea;
-  color: #1c6b46;
+.priority-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
 }
 
-.priority-badge.priority-medium {
-  background-color: #fdf0d9;
-  color: #92600e;
+.priority-pill.priority-low {
+  color: var(--ct-low-text);
+  background-color: var(--ct-low-bg);
+}
+.priority-pill.priority-low::before {
+  background-color: var(--ct-low-dot);
 }
 
-.priority-badge.priority-high {
-  background-color: #fbe3e1;
-  color: #a12f26;
+.priority-pill.priority-medium {
+  color: var(--ct-medium-text);
+  background-color: var(--ct-medium-bg);
+}
+.priority-pill.priority-medium::before {
+  background-color: var(--ct-medium-dot);
+}
+
+.priority-pill.priority-high {
+  color: var(--ct-high-text);
+  background-color: var(--ct-high-bg);
+}
+.priority-pill.priority-high::before {
+  background-color: var(--ct-high-dot);
 }
 
 .status-badge {
   font-weight: 500;
+  border-radius: 999px;
 }
 
 .status-badge-pending {
-  background-color: #eef0f4;
+  background-color: #eef0f3;
   color: var(--ct-ink-soft);
 }
 
@@ -168,7 +282,7 @@ h1, h2, h3, h4, .app-title, .form-heading, .auth-brand-title, .auth-heading {
 
 /* ===== Fecha límite vencida ===== */
 .task-deadline.overdue {
-  color: #c0392b;
+  color: #a3402f;
   font-weight: 600;
 }
 
@@ -189,11 +303,232 @@ h1, h2, h3, h4, .app-title, .form-heading, .auth-brand-title, .auth-heading {
   min-height: 100vh;
 }
 
+/* ===== Mini calendario ===== */
+
+.sidebar-calendar {
+  border: 1px solid var(--ct-border);
+  border-radius: var(--ct-radius-lg);
+  padding: 0.85rem;
+  background-color: var(--ct-surface);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.calendar-month-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ct-ink);
+  text-transform: capitalize;
+}
+
+.calendar-nav-btn {
+  border: none;
+  background: none;
+  color: var(--ct-ink-soft);
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.calendar-nav-btn:hover {
+  background-color: var(--ct-bg);
+  color: var(--ct-ink);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--ct-muted);
+  margin-bottom: 0.3rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.15rem;
+}
+
+.calendar-day {
+  position: relative;
+  border: none;
+  background: none;
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: var(--ct-ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background-color: var(--ct-bg);
+}
+
+.calendar-day.is-today {
+  font-weight: 700;
+  color: var(--ct-brand-dark);
+}
+
+.calendar-day.is-selected {
+  background-color: var(--ct-brand);
+  color: #fff;
+}
+
+.calendar-day-empty {
+  cursor: default;
+}
+
+.calendar-dot {
+  position: absolute;
+  bottom: 0.15rem;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background-color: var(--ct-brand-light);
+}
+
+.calendar-day.is-selected .calendar-dot {
+  background-color: #fff;
+}
+
+.calendar-clear-btn {
+  width: 100%;
+  margin-top: 0.6rem;
+  border: none;
+  background: none;
+  color: var(--ct-ink-soft);
+  font-size: 0.8rem;
+  padding: 0.3rem;
+  border-radius: var(--ct-radius-sm);
+  cursor: pointer;
+}
+
+.calendar-clear-btn:hover {
+  background-color: var(--ct-bg);
+  color: var(--ct-ink);
+}
+
+.day-filter-banner {
+  background-color: var(--ct-brand-tint);
+  color: var(--ct-brand-dark);
+  border-radius: var(--ct-radius);
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.day-filter-clear {
+  border: none;
+  background: none;
+  color: var(--ct-brand-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+@media (max-width: 991.98px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-sidebar {
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid var(--ct-border);
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .sidebar-brand {
+    display: none;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    flex: 1 1 auto;
+  }
+
+  .sidebar-calendar {
+    flex: 1 1 100%;
+    order: 3;
+  }
+
+  .sidebar-logout {
+    margin-top: 0;
+    width: auto;
+  }
+}
+
+/* =========================================================
+   Formulario y tareas
+   ========================================================= */
+
+.task-form-card {
+  border: 1px solid var(--ct-border);
+  border-radius: var(--ct-radius-lg);
+}
+
+.form-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ct-ink);
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--ct-border);
+}
+
+.form-control,
+.form-select {
+  border-radius: var(--ct-radius-sm);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--ct-brand-light);
+  box-shadow: 0 0 0 0.2rem rgba(82, 96, 109, 0.15);
+}
+
+.btn-auth-primary {
+  background-color: var(--ct-brand);
+  border-color: var(--ct-brand);
+  color: #fff;
+  font-weight: 500;
+  border-radius: var(--ct-radius-sm);
+}
+
+.btn-auth-primary:hover,
+.btn-auth-primary:focus {
+  background-color: var(--ct-brand-dark);
+  border-color: var(--ct-brand-dark);
+  color: #fff;
+}
+
+.btn, .btn-group .btn, .form-select {
+  border-radius: var(--ct-radius-sm) !important;
+}
+
 /* ----- Panel de marca (izquierda) ----- */
 .auth-brand {
   flex: 1 1 44%;
-  background: linear-gradient(155deg, var(--ct-brand-dark) 0%, var(--ct-brand) 60%, var(--ct-brand-light) 100%);
-  color: #eef6f4;
+  background: linear-gradient(155deg, var(--ct-brand-dark) 0%, var(--ct-brand) 65%, var(--ct-brand-light) 100%);
+  color: #eef1f3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -210,7 +545,7 @@ h1, h2, h3, h4, .app-title, .form-heading, .auth-brand-title, .auth-heading {
   justify-content: center;
   width: 3rem;
   height: 3rem;
-  border-radius: 0.75rem;
+  border-radius: var(--ct-radius);
   background: rgba(255, 255, 255, 0.14);
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
@@ -224,7 +559,7 @@ h1, h2, h3, h4, .app-title, .form-heading, .auth-brand-title, .auth-heading {
 }
 
 .auth-brand-copy {
-  color: rgba(238, 246, 244, 0.85);
+  color: rgba(238, 241, 243, 0.85);
   line-height: 1.6;
   margin-bottom: 2rem;
 }
@@ -237,12 +572,12 @@ h1, h2, h3, h4, .app-title, .form-heading, .auth-brand-title, .auth-heading {
   flex-direction: column;
   gap: 0.85rem;
   font-size: 0.92rem;
-  color: rgba(238, 246, 244, 0.92);
+  color: rgba(238, 241, 243, 0.92);
 }
 
 .auth-brand-list i {
   margin-right: 0.5rem;
-  color: #cfe9e4;
+  color: #d8dee2;
 }
 
 /* ----- Panel de formularios (derecha) ----- */

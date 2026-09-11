@@ -19,6 +19,8 @@
   let currentUser = null;
   let currentFilter = "all";
   let currentSort = "created_desc";
+  let selectedDay = null; // "YYYY-MM-DD" o null
+  let calendarViewDate = new Date(); // mes que se muestra en el mini calendario
 
   // ---------------------------------------------------------------
   // Referencias al DOM
@@ -41,13 +43,30 @@
   const userNameEl = document.getElementById("user-name");
   const logoutBtn = document.getElementById("logout-btn");
 
+  const calGrid = document.getElementById("cal-grid");
+  const calMonthLabel = document.getElementById("cal-month-label");
+  const calPrevBtn = document.getElementById("cal-prev");
+  const calNextBtn = document.getElementById("cal-next");
+  const calClearBtn = document.getElementById("cal-clear");
+
+  const dayFilterBanner = document.getElementById("day-filter-banner");
+  const dayFilterLabel = document.getElementById("day-filter-label");
+  const dayFilterClearInline = document.getElementById("day-filter-clear-inline");
+
   // ---------------------------------------------------------------
-  // Utilidades
+  // Utilidades de fecha
   // ---------------------------------------------------------------
   function todayISODate() {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    return d.toISOString().slice(0, 10);
+    return toISODate(d);
+  }
+
+  function toISODate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
 
   function formatDate(isoDate) {
@@ -55,6 +74,11 @@
     const [year, month, day] = isoDate.split("-");
     return `${day}/${month}/${year}`;
   }
+
+  const monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  ];
 
   const priorityLabels = { low: "Baja", medium: "Media", high: "Alta" };
   const priorityWeight = { low: 1, medium: 2, high: 3 };
@@ -160,7 +184,6 @@
   }
 
   async function toggleTaskCompleted(id, completed) {
-    // Actualización optimista para que la UI responda al instante.
     tasks = tasks.map((t) => (t.id === id ? { ...t, completed } : t));
     render();
 
@@ -171,7 +194,7 @@
 
     if (error) {
       showStatus(`No se pudo actualizar la tarea: ${error.message}`);
-      await loadTasks(); // revertir con el estado real
+      await loadTasks();
     }
   }
 
@@ -211,6 +234,10 @@
       visible = visible.filter((t) => t.completed);
     }
 
+    if (selectedDay) {
+      visible = visible.filter((t) => t.deadline === selectedDay);
+    }
+
     switch (currentSort) {
       case "deadline_asc":
         visible.sort((a, b) => {
@@ -234,7 +261,7 @@
   }
 
   // ---------------------------------------------------------------
-  // Render
+  // Render de tareas
   // ---------------------------------------------------------------
   function render() {
     const visible = getVisibleTasks();
@@ -247,7 +274,10 @@
     }
 
     const pendingCount = tasks.filter((t) => !t.completed).length;
-    taskCountBadge.textContent = `${pendingCount} pendiente${pendingCount === 1 ? "" : "s"} · ${tasks.length} total`;
+    taskCountBadge.textContent = `${pendingCount}`;
+
+    renderDayFilterBanner();
+    renderCalendar();
   }
 
   function buildTaskElement(task) {
@@ -271,9 +301,9 @@
       descEl.remove();
     }
 
-    const priorityBadge = node.querySelector(".priority-badge");
-    priorityBadge.textContent = priorityLabels[task.priority] || "Media";
-    priorityBadge.classList.add(`priority-${task.priority}`);
+    const priorityPill = node.querySelector(".priority-pill");
+    priorityPill.textContent = priorityLabels[task.priority] || "Media";
+    priorityPill.classList.add(`priority-${task.priority}`);
 
     const statusBadge = node.querySelector(".status-badge");
     statusBadge.textContent = task.completed ? "Completada" : "Pendiente";
@@ -298,6 +328,96 @@
 
     return node;
   }
+
+  // ---------------------------------------------------------------
+  // Mini calendario
+  // ---------------------------------------------------------------
+  function renderCalendar() {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+
+    calMonthLabel.textContent = `${monthNames[month]} ${year}`;
+
+    // Días con al menos una tarea (deadline), para pintar el puntico.
+    const daysWithTasks = new Set(
+      tasks.filter((t) => t.deadline).map((t) => t.deadline)
+    );
+
+    const firstOfMonth = new Date(year, month, 1);
+    // Lunes = 0 ... Domingo = 6 (para que la semana empiece en lunes)
+    const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = todayISODate();
+
+    calGrid.innerHTML = "";
+
+    // Celdas vacías antes del día 1
+    for (let i = 0; i < firstWeekday; i++) {
+      const empty = document.createElement("span");
+      empty.className = "calendar-day calendar-day-empty";
+      calGrid.appendChild(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const iso = toISODate(new Date(year, month, day));
+
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "calendar-day";
+      cell.textContent = day;
+
+      if (iso === today) cell.classList.add("is-today");
+      if (iso === selectedDay) cell.classList.add("is-selected");
+
+      if (daysWithTasks.has(iso)) {
+        const dot = document.createElement("span");
+        dot.className = "calendar-dot";
+        cell.appendChild(dot);
+      }
+
+      cell.addEventListener("click", () => {
+        selectedDay = selectedDay === iso ? null : iso;
+        render();
+      });
+
+      calGrid.appendChild(cell);
+    }
+  }
+
+  function renderDayFilterBanner() {
+    const hasDay = Boolean(selectedDay);
+    dayFilterBanner.classList.toggle("d-none", !hasDay);
+    calClearBtn.classList.toggle("d-none", !hasDay);
+    if (hasDay) {
+      dayFilterLabel.textContent = formatDate(selectedDay);
+    }
+  }
+
+  calPrevBtn.addEventListener("click", () => {
+    calendarViewDate = new Date(
+      calendarViewDate.getFullYear(),
+      calendarViewDate.getMonth() - 1,
+      1
+    );
+    renderCalendar();
+  });
+
+  calNextBtn.addEventListener("click", () => {
+    calendarViewDate = new Date(
+      calendarViewDate.getFullYear(),
+      calendarViewDate.getMonth() + 1,
+      1
+    );
+    renderCalendar();
+  });
+
+  function clearDayFilter() {
+    selectedDay = null;
+    render();
+  }
+
+  calClearBtn.addEventListener("click", clearDayFilter);
+  dayFilterClearInline.addEventListener("click", clearDayFilter);
 
   // ---------------------------------------------------------------
   // Eventos
@@ -341,7 +461,6 @@
     renderUser(currentUser);
     await loadTasks();
 
-    // Si la sesión se cierra en otra pestaña, saca al usuario de aquí también.
     supabaseClient.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
         window.location.replace("login.html");

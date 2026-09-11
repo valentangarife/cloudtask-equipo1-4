@@ -14,127 +14,166 @@
 </head>
 <body>
 
-  <!-- ===== Encabezado ===== -->
-  <header class="app-header">
-    <div class="container">
-      <div class="d-flex align-items-center justify-content-between py-3">
-        <div class="d-flex align-items-center gap-2">
-          <span class="app-brand-mark"><i class="bi bi-check2-square"></i></span>
-          <h1 class="h4 mb-0 app-title">CloudTasks</h1>
-        </div>
+  <div class="app-shell">
 
-        <div class="d-flex align-items-center gap-3">
-          <span class="badge task-count-badge" id="task-count">0 tareas</span>
-          <div class="vr d-none d-sm-block"></div>
-          <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-person-circle text-muted"></i>
-            <span class="small fw-medium" id="user-name">—</span>
-          </div>
-          <button class="btn btn-sm btn-outline-secondary" id="logout-btn">
-            <i class="bi bi-box-arrow-right"></i> Salir
+    <!-- ===== Menú lateral ===== -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <span class="app-brand-mark"><i class="bi bi-check2-square"></i></span>
+        <span class="app-title">CloudTasks</span>
+      </div>
+
+      <div class="sidebar-user">
+        <i class="bi bi-person-circle"></i>
+        <span class="small fw-medium" id="user-name">—</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button type="button" class="sidebar-nav-item active" id="nav-tasks" data-view="tasks">
+          <i class="bi bi-list-check"></i> Tareas
+          <span class="badge task-count-badge ms-auto" id="task-count">0</span>
+        </button>
+      </nav>
+
+      <!-- ===== Mini calendario ===== -->
+      <div class="sidebar-calendar">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" id="cal-prev" aria-label="Mes anterior">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <span class="calendar-month-label" id="cal-month-label">Mes</span>
+          <button type="button" class="calendar-nav-btn" id="cal-next" aria-label="Mes siguiente">
+            <i class="bi bi-chevron-right"></i>
           </button>
         </div>
+        <div class="calendar-weekdays">
+          <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+        </div>
+        <div class="calendar-grid" id="cal-grid"></div>
+
+        <button type="button" class="calendar-clear-btn d-none" id="cal-clear">
+          <i class="bi bi-x-circle"></i> Quitar filtro de día
+        </button>
       </div>
-    </div>
-  </header>
 
-  <main class="container py-4">
-    <div id="status-alert" class="alert d-none" role="alert"></div>
+      <button class="sidebar-logout" id="logout-btn">
+        <i class="bi bi-box-arrow-right"></i> Salir
+      </button>
+    </aside>
 
-    <div class="row g-4">
+    <!-- ===== Contenido principal ===== -->
+    <div class="app-main">
 
-      <!-- ===== Formulario para crear tarea ===== -->
-      <div class="col-12 col-lg-4">
-        <div class="card task-form-card shadow-sm">
-          <div class="card-body">
-            <h2 class="form-heading mb-3">Nueva tarea</h2>
+      <header class="app-topbar d-lg-none">
+        <div class="d-flex align-items-center gap-2">
+          <span class="app-brand-mark"><i class="bi bi-check2-square"></i></span>
+          <h1 class="h5 mb-0 app-title">CloudTasks</h1>
+        </div>
+      </header>
 
-            <form id="task-form" novalidate>
-              <div class="mb-3">
-                <label for="title" class="form-label">Título <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="title"
-                  name="title"
-                  placeholder="Ej. Preparar informe técnico"
-                  maxlength="80"
-                  required
-                >
-                <div class="invalid-feedback">El título es obligatorio (máx. 80 caracteres).</div>
+      <main class="app-content">
+        <div id="status-alert" class="alert d-none" role="alert"></div>
+        <div id="day-filter-banner" class="day-filter-banner d-none">
+          Mostrando tareas de <strong id="day-filter-label"></strong>
+          <button type="button" class="day-filter-clear" id="day-filter-clear-inline">Quitar</button>
+        </div>
+
+        <div class="row g-4">
+
+          <!-- ===== Formulario para crear tarea ===== -->
+          <div class="col-12 col-lg-4">
+            <div class="card task-form-card shadow-sm">
+              <div class="card-body">
+                <h2 class="form-heading mb-3">Nueva tarea</h2>
+
+                <form id="task-form" novalidate>
+                  <div class="mb-3">
+                    <label for="title" class="form-label">Título <span class="text-danger">*</span></label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="title"
+                      name="title"
+                      placeholder="Ej. Preparar informe técnico"
+                      maxlength="80"
+                      required
+                    >
+                    <div class="invalid-feedback">El título es obligatorio (máx. 80 caracteres).</div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="description" class="form-label">Descripción</label>
+                    <textarea
+                      class="form-control"
+                      id="description"
+                      name="description"
+                      rows="3"
+                      maxlength="300"
+                      placeholder="Detalles de la tarea (opcional)"
+                    ></textarea>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="deadline" class="form-label">Fecha límite</label>
+                    <input type="date" class="form-control" id="deadline" name="deadline">
+                    <div class="invalid-feedback">La fecha límite no puede ser anterior a hoy.</div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="priority" class="form-label">Prioridad</label>
+                    <select class="form-select" id="priority" name="priority">
+                      <option value="low">Baja</option>
+                      <option value="medium" selected>Media</option>
+                      <option value="high">Alta</option>
+                    </select>
+                  </div>
+
+                  <button type="submit" class="btn btn-auth-primary w-100">
+                    <i class="bi bi-plus-lg"></i> Agregar tarea
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Lista de tareas ===== -->
+          <div class="col-12 col-lg-8">
+
+            <!-- Filtros -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <div class="btn-group" role="group" aria-label="Filtro de tareas">
+                <input type="radio" class="btn-check" name="filter" id="filter-all" value="all" checked>
+                <label class="btn btn-outline-secondary btn-sm" for="filter-all">Todas</label>
+
+                <input type="radio" class="btn-check" name="filter" id="filter-pending" value="pending">
+                <label class="btn btn-outline-secondary btn-sm" for="filter-pending">Pendientes</label>
+
+                <input type="radio" class="btn-check" name="filter" id="filter-completed" value="completed">
+                <label class="btn btn-outline-secondary btn-sm" for="filter-completed">Completadas</label>
               </div>
 
-              <div class="mb-3">
-                <label for="description" class="form-label">Descripción</label>
-                <textarea
-                  class="form-control"
-                  id="description"
-                  name="description"
-                  rows="3"
-                  maxlength="300"
-                  placeholder="Detalles de la tarea (opcional)"
-                ></textarea>
-              </div>
+              <select id="sort-select" class="form-select form-select-sm w-auto">
+                <option value="created_desc">Más recientes primero</option>
+                <option value="deadline_asc">Fecha límite próxima</option>
+                <option value="priority_desc">Prioridad (alta primero)</option>
+              </select>
+            </div>
 
-              <div class="mb-3">
-                <label for="deadline" class="form-label">Fecha límite</label>
-                <input type="date" class="form-control" id="deadline" name="deadline">
-                <div class="invalid-feedback">La fecha límite no puede ser anterior a hoy.</div>
-              </div>
+            <!-- Estado vacío -->
+            <div id="empty-state" class="text-center text-muted py-5 d-none">
+              <i class="bi bi-clipboard-check fs-1"></i>
+              <p class="mt-2 mb-0">No hay tareas para mostrar.</p>
+              <p class="small">Crea tu primera tarea usando el formulario de la izquierda.</p>
+            </div>
 
-              <div class="mb-3">
-                <label for="priority" class="form-label">Prioridad</label>
-                <select class="form-select" id="priority" name="priority">
-                  <option value="low">Baja</option>
-                  <option value="medium" selected>Media</option>
-                  <option value="high">Alta</option>
-                </select>
-              </div>
+            <!-- Lista -->
+            <ul id="task-list" class="list-unstyled d-flex flex-column gap-2"></ul>
 
-              <button type="submit" class="btn btn-auth-primary w-100">
-                <i class="bi bi-plus-lg"></i> Agregar tarea
-              </button>
-            </form>
           </div>
         </div>
-      </div>
-
-      <!-- ===== Lista de tareas ===== -->
-      <div class="col-12 col-lg-8">
-
-        <!-- Filtros -->
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <div class="btn-group" role="group" aria-label="Filtro de tareas">
-            <input type="radio" class="btn-check" name="filter" id="filter-all" value="all" checked>
-            <label class="btn btn-outline-secondary btn-sm" for="filter-all">Todas</label>
-
-            <input type="radio" class="btn-check" name="filter" id="filter-pending" value="pending">
-            <label class="btn btn-outline-secondary btn-sm" for="filter-pending">Pendientes</label>
-
-            <input type="radio" class="btn-check" name="filter" id="filter-completed" value="completed">
-            <label class="btn btn-outline-secondary btn-sm" for="filter-completed">Completadas</label>
-          </div>
-
-          <select id="sort-select" class="form-select form-select-sm w-auto">
-            <option value="created_desc">Más recientes primero</option>
-            <option value="deadline_asc">Fecha límite próxima</option>
-            <option value="priority_desc">Prioridad (alta primero)</option>
-          </select>
-        </div>
-
-        <!-- Estado vacío -->
-        <div id="empty-state" class="text-center text-muted py-5 d-none">
-          <i class="bi bi-clipboard-check fs-1"></i>
-          <p class="mt-2 mb-0">No hay tareas para mostrar.</p>
-          <p class="small">Crea tu primera tarea usando el formulario de la izquierda.</p>
-        </div>
-
-        <!-- Lista -->
-        <ul id="task-list" class="list-unstyled d-flex flex-column gap-2"></ul>
-
-      </div>
+      </main>
     </div>
-  </main>
+  </div>
 
   <!-- Plantilla de una tarea (se clona por JS) -->
   <template id="task-template">
@@ -146,7 +185,7 @@
           <div class="flex-grow-1">
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <h3 class="h6 mb-0 task-title"></h3>
-              <span class="badge priority-badge"></span>
+              <span class="priority-pill"></span>
               <span class="badge status-badge"></span>
             </div>
             <p class="text-muted small mb-1 task-description"></p>
