@@ -1,144 +1,66 @@
-/**
- * CloudTasks - Autenticación (login.html)
- * Maneja el inicio de sesión y el registro con Supabase Auth.
- */
+-- =========================================================
+-- CloudTasks - Esquema de base de datos (Etapa 2 + Auth)
+-- =========================================================
+-- Ejecutar en Supabase: Project -> SQL Editor -> New query
 
-(() => {
-  "use strict";
+-- 1) Tabla de tareas -----------------------------------------------------
+-- Se agrega user_id para que cada tarea pertenezca a un usuario
+-- autenticado (auth.users es la tabla que gestiona Supabase Auth).
+create table if not exists public.tasks (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users (id) on delete cascade,
+  title        text not null check (char_length(trim(title)) > 0),
+  description  text default '',
+  completed    boolean not null default false,
+  created_at   timestamptz not null default now(),
+  deadline     date,
+  priority     text not null default 'medium' check (priority in ('low', 'medium', 'high'))
+);
 
-  const alertBox = document.getElementById("auth-alert");
+-- Índices útiles
+create index if not exists tasks_created_at_idx on public.tasks (created_at desc);
+create index if not exists tasks_user_id_idx on public.tasks (user_id);
 
-  const loginView = document.getElementById("login-view");
-  const registerView = document.getElementById("register-view");
-  const loginForm = document.getElementById("login-form");
-  const registerForm = document.getElementById("register-form");
-  const loginSubmit = document.getElementById("login-submit");
-  const registerSubmit = document.getElementById("register-submit");
+-- 2) Row Level Security ---------------------------------------------------
+-- Cada usuario solo puede ver y modificar SUS PROPIAS tareas.
+-- auth.uid() devuelve el id del usuario autenticado que hace la petición.
+alter table public.tasks enable row level security;
 
-  // ---------------------------------------------------------------
-  // Si ya hay una sesión activa, no tiene sentido ver el login.
-  // ---------------------------------------------------------------
-  async function redirectIfLoggedIn() {
-    const { data } = await supabaseClient.auth.getSession();
-    if (data.session) {
-      window.location.replace("index.html");
-    }
-  }
-  redirectIfLoggedIn();
+drop policy if exists "Seleccionar solo tareas propias" on public.tasks;
+create policy "Seleccionar solo tareas propias"
+  on public.tasks for select
+  using (auth.uid() = user_id);
 
-  // ---------------------------------------------------------------
-  // Utilidades de UI
-  // ---------------------------------------------------------------
-  function showAlert(message, type = "danger") {
-    alertBox.textContent = message;
-    alertBox.className = `alert alert-${type}`;
-  }
+drop policy if exists "Insertar tareas propias" on public.tasks;
+create policy "Insertar tareas propias"
+  on public.tasks for insert
+  with check (auth.uid() = user_id);
 
-  function hideAlert() {
-    alertBox.className = "alert d-none";
-  }
+drop policy if exists "Actualizar tareas propias" on public.tasks;
+create policy "Actualizar tareas propias"
+  on public.tasks for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
-  function setLoading(button, loading, label) {
-    button.disabled = loading;
-    button.innerHTML = loading
-      ? `<span class="spinner-border spinner-border-sm me-2"></span>${label}`
-      : label;
-  }
+drop policy if exists "Eliminar tareas propias" on public.tasks;
+create policy "Eliminar tareas propias"
+  on public.tasks for delete
+  using (auth.uid() = user_id);
 
-  document.getElementById("show-register").addEventListener("click", () => {
-    hideAlert();
-    loginView.classList.add("d-none");
-    registerView.classList.remove("d-none");
-  });
+-- 3) Nombre y apellido del usuario -----------------------------------
+-- No creamos una tabla "profiles" aparte para mantener el laboratorio
+-- simple: nombre y apellido se guardan en los metadatos del usuario
+-- (auth.users.raw_user_meta_data) al momento del registro, usando la
+-- opción "options.data" del método supabase.auth.signUp() en el
+-- frontend (ver js/auth.js). Se pueden consultar así:
+--
+--   select id, email, raw_user_meta_data->>'nombre' as nombre,
+--          raw_user_meta_data->>'apellido' as apellido
+--   from auth.users;
 
-  document.getElementById("show-login").addEventListener("click", () => {
-    hideAlert();
-    registerView.classList.add("d-none");
-    loginView.classList.remove("d-none");
-  });
-
-  // ---------------------------------------------------------------
-  // Traducción de errores comunes de Supabase Auth
-  // ---------------------------------------------------------------
-  function translateError(message) {
-    const map = {
-      "Invalid login credentials": "Correo o contraseña incorrectos.",
-      "User already registered": "Ya existe una cuenta con ese correo.",
-      "Password should be at least 6 characters":
-        "La contraseña debe tener al menos 6 caracteres.",
-      "Email not confirmed":
-        "Debes confirmar tu correo antes de iniciar sesión.",
-    };
-    return map[message] || message;
-  }
-
-  // ---------------------------------------------------------------
-  // Login
-  // ---------------------------------------------------------------
-  loginForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    hideAlert();
-
-    const email = document.getElementById("login-email").value.trim();
-    const password = document.getElementById("login-password").value;
-
-    setLoading(loginSubmit, true, "Iniciar sesión");
-
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    setLoading(loginSubmit, false, "Iniciar sesión");
-
-    if (error) {
-      showAlert(translateError(error.message));
-      return;
-    }
-
-    window.location.href = "index.html";
-  });
-
-  // ---------------------------------------------------------------
-  // Registro
-  // ---------------------------------------------------------------
-  registerForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    hideAlert();
-
-    const nombre = document.getElementById("register-nombre").value.trim();
-    const apellido = document.getElementById("register-apellido").value.trim();
-    const email = document.getElementById("register-email").value.trim();
-    const password = document.getElementById("register-password").value;
-
-    setLoading(registerSubmit, true, "Crear cuenta");
-
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { nombre, apellido },
-      },
-    });
-
-    setLoading(registerSubmit, false, "Crear cuenta");
-
-    if (error) {
-      showAlert(translateError(error.message));
-      return;
-    }
-
-    // Si el proyecto tiene "Confirm email" activado, Supabase no
-    // entrega sesión inmediata: se le pide al usuario revisar su correo.
-    if (!data.session) {
-      showAlert(
-        "Cuenta creada. Revisa tu correo para confirmarla antes de iniciar sesión.",
-        "success"
-      );
-      registerForm.reset();
-      return;
-    }
-
-    window.location.href = "index.html";
-  });
-})();
+-- 4) Nota sobre confirmación de correo -------------------------------
+-- Por defecto, Supabase exige confirmar el correo antes de poder iniciar
+-- sesión. Para el laboratorio (y para no depender de configurar SMTP),
+-- puedes desactivarlo en:
+--   Authentication -> Providers -> Email -> "Confirm email" = OFF
+-- Así, el registro deja al usuario con sesión activa de inmediato.
